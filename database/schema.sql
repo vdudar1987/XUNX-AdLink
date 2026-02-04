@@ -36,6 +36,7 @@ CREATE TABLE campaigns (
     spent_total DECIMAL(12,2) NOT NULL DEFAULT 0.00,
     starts_at DATETIME DEFAULT NULL,
     ends_at DATETIME DEFAULT NULL,
+    moderation_status VARCHAR(32) NOT NULL DEFAULT 'pending',
     active TINYINT(1) NOT NULL DEFAULT 1,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (advertiser_id) REFERENCES advertisers(id)
@@ -129,4 +130,21 @@ CREATE TABLE transactions (
     FOREIGN KEY (advertiser_id) REFERENCES advertisers(id),
     FOREIGN KEY (publisher_id) REFERENCES publishers(id),
     FOREIGN KEY (campaign_id) REFERENCES campaigns(id)
+);
+
+CREATE TABLE payout_requests (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    publisher_id INT NOT NULL,
+    amount DECIMAL(12,2) NOT NULL,
+    method VARCHAR(64) NOT NULL,
+    status VARCHAR(32) NOT NULL DEFAULT 'pending',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    processed_at DATETIME DEFAULT NULL,
+    FOREIGN KEY (publisher_id) REFERENCES publishers(id),
+    INDEX idx_payout_requests (status, created_at)
+);
+
+CREATE TABLE settings (
+    setting_key VARCHAR(64) NOT NULL PRIMARY KEY,
+    setting_value TEXT NOT NULL
 );

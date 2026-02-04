@@ -61,7 +61,12 @@ const initLogin = () => {
       method: "POST",
       body: JSON.stringify(payload),
     })
-      .then(() => {
+      .then((data) => {
+        const role = data.user?.role;
+        if (role === "admin") {
+          window.location.href = "/admin.html";
+          return;
+        }
         window.location.href = "/dashboard.html";
       })
       .catch((error) => setNotice(notice, error.message, true));

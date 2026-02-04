@@ -1,5 +1,7 @@
 <?php
 
+require_once __DIR__ . '/settings.php';
+
 function detect_fraud(mysqli $conn, array $data): array
 {
     $ip = $data['ip'];
@@ -30,10 +32,10 @@ function detect_fraud(mysqli $conn, array $data): array
         return [true, 'referrer_mismatch'];
     }
 
-    $config = require __DIR__ . '/../config.php';
-    $limit = (int) $config['fraud']['max_clicks_per_ip_campaign_10min'];
-    $fingerprintLimit = (int) $config['fraud']['max_clicks_per_fingerprint_10min'];
-    $minTimeOnPage = (int) $config['fraud']['min_time_on_page_ms'];
+    $settings = get_settings($conn);
+    $limit = (int) $settings['fraud']['max_clicks_per_ip_campaign_10min'];
+    $fingerprintLimit = (int) $settings['fraud']['max_clicks_per_fingerprint_10min'];
+    $minTimeOnPage = (int) $settings['fraud']['min_time_on_page_ms'];
 
     if ($timeOnPageMs > 0 && $timeOnPageMs < $minTimeOnPage) {
         return [true, 'too_fast_click'];
