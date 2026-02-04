@@ -7,6 +7,8 @@ function detect_fraud(mysqli $conn, array $data): array
     $publisherId = (int) $data['publisher_id'];
     $userAgent = trim($data['user_agent']);
     $referrer = trim($data['referrer']);
+    $fingerprint = trim($data['fingerprint']);
+    $timeOnPageMs = (int) $data['time_on_page_ms'];
 
     if ($ip === '' || $userAgent === '') {
         return [true, 'missing_client_data'];
@@ -30,6 +32,12 @@ function detect_fraud(mysqli $conn, array $data): array
 
     $config = require __DIR__ . '/../config.php';
     $limit = (int) $config['fraud']['max_clicks_per_ip_campaign_10min'];
+    $fingerprintLimit = (int) $config['fraud']['max_clicks_per_fingerprint_10min'];
+    $minTimeOnPage = (int) $config['fraud']['min_time_on_page_ms'];
+
+    if ($timeOnPageMs > 0 && $timeOnPageMs < $minTimeOnPage) {
+        return [true, 'too_fast_click'];
+    }
 
     $stmt = $conn->prepare(
         'SELECT COUNT(*) FROM clicks WHERE ip = ? AND campaign_id = ? AND created_at > (NOW() - INTERVAL 10 MINUTE)'
@@ -42,6 +50,21 @@ function detect_fraud(mysqli $conn, array $data): array
 
     if ((int) $count >= $limit) {
         return [true, 'too_many_clicks'];
+    }
+
+    if ($fingerprint !== '') {
+        $stmt = $conn->prepare(
+            'SELECT COUNT(*) FROM clicks WHERE fingerprint = ? AND campaign_id = ? AND created_at > (NOW() - INTERVAL 10 MINUTE)'
+        );
+        $stmt->bind_param('si', $fingerprint, $campaignId);
+        $stmt->execute();
+        $stmt->bind_result($fpCount);
+        $stmt->fetch();
+        $stmt->close();
+
+        if ((int) $fpCount >= $fingerprintLimit) {
+            return [true, 'fingerprint_limit'];
+        }
     }
 
     return [false, ''];

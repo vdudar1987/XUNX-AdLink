@@ -55,5 +55,11 @@ return [
     ],
     'fraud' => [
         'max_clicks_per_ip_campaign_10min' => 5,
+        'max_clicks_per_fingerprint_10min' => 8,
+        'min_time_on_page_ms' => 2000,
+    ],
+    'finance' => [
+        'commission_rate' => 0.2,
+        'currency' => 'RUB',
     ],
 ];
