@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Подтверждение email — XUNX AdLink</title>
+    <link rel="stylesheet" href="assets/css/style.css" />
+  </head>
+  <body>
+    <header class="navbar">
+      <div class="container navbar__inner">
+        <div class="logo">XUNX AdLink</div>
+        <nav class="nav-links">
+          <a href="index.html">Главная</a>
+          <a href="about.html">О сервисе</a>
+          <a href="advertisers.html">Рекламодателям</a>
+          <a href="publishers.html">Вебмастерам</a>
+          <a href="rules.html">Правила</a>
+          <a href="contacts.html">Контакты</a>
+          <a href="auth.html">Вход</a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="section">
+      <div class="container split">
+        <div class="card">
+          <h2>Подтверждение email</h2>
+          <form class="form" data-verify-form>
+            <div>
+              <label for="email">Email</label>
+              <input id="email" name="email" type="email" required />
+            </div>
+            <button class="button" type="submit">Подтвердить</button>
+            <div data-verify-notice></div>
+          </form>
+        </div>
+        <div class="card">
+          <h3>Нужна помощь?</h3>
+          <p class="muted">
+            Если письмо не пришло, свяжитесь с поддержкой или попробуйте снова.
+          </p>
+          <a class="button button--ghost" href="contacts.html">Контакты</a>
+        </div>
+      </div>
+    </main>
+
+    <script src="assets/js/app.js"></script>
+  </body>
+</html>
