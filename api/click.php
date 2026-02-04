@@ -62,4 +62,7 @@ $stmt->bind_param(
 $stmt->execute();
 $stmt->close();
 
-echo json_encode(['allowed' => !$isFraud]);
+echo json_encode([
+    'allowed' => true,
+    'counted' => !$isFraud,
+]);
