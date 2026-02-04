@@ -3,6 +3,7 @@
 require __DIR__ . '/../lib/db.php';
 require __DIR__ . '/../lib/geo.php';
 require __DIR__ . '/../lib/fraud.php';
+require __DIR__ . '/../lib/settings.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
@@ -50,8 +51,8 @@ $allowed = false;
 $counted = false;
 
 if (!$isFraud) {
-    $config = require __DIR__ . '/../config.php';
-    $commissionRate = (float) $config['finance']['commission_rate'];
+    $settings = get_settings($conn);
+    $commissionRate = (float) $settings['finance']['commission_rate'];
     $conn->begin_transaction();
 
     $stmt = $conn->prepare(

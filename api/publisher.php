@@ -111,12 +111,33 @@ if ($action === 'payout') {
     }
 
     $stmt = $conn->prepare(
+        'SELECT id FROM publishers WHERE user_id = ? ORDER BY created_at ASC LIMIT 1'
+    );
+    $stmt->bind_param('i', $user['id']);
+    $stmt->execute();
+    $stmt->bind_result($publisherId);
+    $stmt->fetch();
+    $stmt->close();
+
+    if (!$publisherId) {
+        json_response(['error' => 'Сайт не найден.'], 404);
+    }
+
+    $stmt = $conn->prepare(
+        'INSERT INTO payout_requests (publisher_id, amount, method) VALUES (?, ?, ?)'
+    );
+    $stmt->bind_param('ids', $publisherId, $amount, $method);
+    $stmt->execute();
+    $requestId = $stmt->insert_id;
+    $stmt->close();
+
+    $stmt = $conn->prepare(
         'INSERT INTO transactions (publisher_id, amount, type, description)
-         VALUES ((SELECT id FROM publishers WHERE user_id = ? ORDER BY created_at ASC LIMIT 1), ?, ?, ?)'
+         VALUES (?, ?, ?, ?)'
     );
     $type = 'payout_request';
-    $desc = 'Запрос на вывод: ' . $method;
-    $stmt->bind_param('idss', $user['id'], $amount, $type, $desc);
+    $desc = 'Запрос на вывод #' . $requestId . ': ' . $method;
+    $stmt->bind_param('idss', $publisherId, $amount, $type, $desc);
     $stmt->execute();
     $stmt->close();
 

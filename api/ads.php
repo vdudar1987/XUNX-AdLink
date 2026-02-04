@@ -45,7 +45,9 @@ if ($clean === []) {
 
 $conn = db();
 
-$stmt = $conn->prepare('SELECT id FROM publishers WHERE id = ? AND active = 1');
+$stmt = $conn->prepare(
+    "SELECT id FROM publishers WHERE id = ? AND active = 1 AND moderation_status = 'approved'"
+);
 $stmt->bind_param('i', $publisherId);
 $stmt->execute();
 $stmt->store_result();
@@ -75,6 +77,7 @@ $sql = "
     JOIN campaigns c ON c.id = k.campaign_id
     JOIN advertisers a ON a.id = c.advertiser_id
     WHERE c.active = 1
+      AND c.moderation_status = 'approved'
       AND a.status = 'active'
       AND a.balance >= c.cpc
       AND k.keyword IN ($placeholders)
