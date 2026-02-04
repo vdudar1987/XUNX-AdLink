@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Демо AdLink</title>
+  <style>
+    body {
+      font-family: "Inter", "Segoe UI", sans-serif;
+      margin: 24px;
+      line-height: 1.6;
+      background: #f8fafc;
+      color: #0f172a;
+    }
+    .container {
+      max-width: 860px;
+      margin: 0 auto;
+      background: #fff;
+      padding: 24px;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+    }
+    h1 {
+      margin-top: 0;
+    }
+    a {
+      color: #2563eb;
+    }
+    blockquote {
+      border-left: 3px solid #cbd5f5;
+      margin: 16px 0;
+      padding-left: 16px;
+      color: #475569;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Контекстно-баннерная сеть AdLink</h1>
+    <p>
+      Рекламная сеть помогает рекламодателям получать целевые клики,
+      а вебмастерам — монетизировать русскоязычные сайты. Эта страница
+      демонстрирует, как ключевые слова превращаются в интерактивные
+      рекламные упоминания.
+    </p>
+    <p>
+      На странице упомянуты: <strong>маркетинг</strong>, <strong>аналитика</strong>,
+      <strong>CRM</strong>, <strong>лиды</strong> и <strong>аудитория</strong>.
+    </p>
+    <blockquote>
+      В цитатах и заголовках подмена слов не выполняется — это требование
+      для сохранения читаемости и доверия аудитории.
+    </blockquote>
+    <p>
+      Перейдите на <a href="https://example.com">пример ссылки</a>, чтобы убедиться,
+      что ссылки не модифицируются.
+    </p>
+    <p>
+      Рекламные слова получают подсветку и показывают тулбар с тизером,
+      баннером или кратким описанием. Клик по кнопке учитывает расходы
+      рекламодателя, доход вебмастера и комиссию сети.
+    </p>
+  </div>
+
+  <script
+    src="/ad.js"
+    data-click-endpoint="https://example.com/api/click.php"
+    data-impression-endpoint="https://example.com/api/impression.php"
+    data-publisher-id="1"
+    data-demo-ads='[
+      {
+        "campaign_id": 10,
+        "advertiser_id": 2,
+        "keyword_id": 101,
+        "keyword": "маркетинг",
+        "cpc": 25,
+        "title": "Маркетинг под ключ",
+        "landing_url": "https://example.com/marketing",
+        "ad_type": "context",
+        "teaser_text": "Повышаем конверсию и привлекаем лиды за 7 дней.",
+        "image_url": "https://images.unsplash.com/photo-1521737604893-d14cc237f11d?auto=format&fit=crop&w=200&q=60"
+      },
+      {
+        "campaign_id": 11,
+        "advertiser_id": 3,
+        "keyword_id": 102,
+        "keyword": "аналитика",
+        "cpc": 18,
+        "title": "Сквозная аналитика",
+        "landing_url": "https://example.com/analytics",
+        "ad_type": "teaser",
+        "teaser_text": "Дашборды, ROI и прозрачные отчёты в одном месте.",
+        "image_url": "https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=200&q=60"
+      },
+      {
+        "campaign_id": 12,
+        "advertiser_id": 4,
+        "keyword_id": 103,
+        "keyword": "аудитория",
+        "cpc": 12,
+        "title": "Сегментация аудитории",
+        "landing_url": "https://example.com/audience",
+        "ad_type": "banner",
+        "teaser_text": "Настройте персональные предложения для клиентов.",
+        "image_url": "https://images.unsplash.com/photo-1485217988980-11786ced9454?auto=format&fit=crop&w=200&q=60"
+      }
+    ]'
+  ></script>
+</body>
+</html>
