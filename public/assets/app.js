@@ -19,12 +19,13 @@ form.addEventListener('submit', async (e) => {
 
   const button = form.querySelector('button');
   button.disabled = true;
-  showStatus('Обработка ссылки и скачивание... Это может занять до 1-2 минут.', 'success');
+  showStatus('Обработка ссылки... Пытаемся выдать прямую ссылку без сохранения на сервере.', 'success');
 
   try {
     const payload = {
       url: form.url.value.trim(),
       format: form.format.value,
+      direct: true,
     };
 
     const response = await fetch('api.php', {
@@ -38,9 +39,17 @@ form.addEventListener('submit', async (e) => {
       throw new Error(data.error || 'Ошибка сервера');
     }
 
-    showStatus('Готово! Файл подготовлен к скачиванию.', 'success');
+    const isDirect = data.mode === 'direct';
+    showStatus(data.message || (isDirect
+      ? 'Готово! Выдана прямая ссылка для скачивания.'
+      : 'Готово! Файл подготовлен к скачиванию.'), 'success');
+
     downloadLink.href = data.download_url;
-    downloadLink.textContent = `Скачать: ${data.filename}`;
+    downloadLink.target = '_blank';
+    downloadLink.rel = 'noopener noreferrer';
+    downloadLink.textContent = isDirect
+      ? 'Открыть прямую ссылку на файл'
+      : `Скачать: ${data.filename}`;
     downloadLink.classList.remove('hidden');
   } catch (error) {
     showStatus(error.message || 'Не удалось скачать видео.', 'error');
