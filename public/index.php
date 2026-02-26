@@ -29,7 +29,7 @@
       <a id="downloadLink" class="download-link hidden" href="#">Скачать файл</a>
 
       <div class="note">
-        <strong>Важно:</strong> сервер должен иметь <code>yt-dlp</code> и <code>ffmpeg</code>.
+        <strong>Важно:</strong> сервер должен иметь <code>yt-dlp</code> и <code>ffmpeg</code>. Для MP4 сначала пробуем отдать прямую ссылку без хранения файла.
       </div>
     </section>
   </main>
