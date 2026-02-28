@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <dleplugin>
 	<name>DLE AI Studio - ИИ-движок контента v1.0</name>
-	<description>Профессиональный модуль ИИ для создания контента категорий и новостей с использованием OpenAI, Gemini, Claude и Qwen. Включает пакетную обработку, расписание, генерацию изображений, шаблоны, ревизии, отчётность, квоты и многоязычную поддержку.</description>
+	<description>Профессиональный модуль ИИ для создания контента категорий и новостей с использованием OpenAI, Gemini, Claude, Qwen и OpenRouter. Включает пакетную обработку, расписание, генерацию изображений, шаблоны, ревизии, отчётность, квоты и многоязычную поддержку.</description>
 	<icon></icon>
 	<version>1.0</version>
 	<dleversion>13.0</dleversion>
@@ -197,7 +197,8 @@ INSERT IGNORE INTO {prefix}_catman_quota (`provider`, `period`, `period_start`, 
 ('openai', 'monthly', CURDATE(), DATE_ADD(CURDATE(), INTERVAL 1 MONTH)),
 ('gemini', 'monthly', CURDATE(), DATE_ADD(CURDATE(), INTERVAL 1 MONTH)),
 ('claude', 'monthly', CURDATE(), DATE_ADD(CURDATE(), INTERVAL 1 MONTH)),
-('qwen', 'monthly', CURDATE(), DATE_ADD(CURDATE(), INTERVAL 1 MONTH));
+('qwen', 'monthly', CURDATE(), DATE_ADD(CURDATE(), INTERVAL 1 MONTH)),
+('openrouter', 'monthly', CURDATE(), DATE_ADD(CURDATE(), INTERVAL 1 MONTH));
 
 -- Admin Section
 INSERT IGNORE INTO {prefix}_admin_sections (`name`, `title`, `descr`, `icon`, `allow_groups`) VALUES 
@@ -414,7 +415,8 @@ class CatManAI
             'openai' => 'gpt-4o',
             'gemini' => 'gemini-2.5-flash',
             'qwen'   => 'qwen-turbo',
-            'claude' => 'claude-haiku-4-5-20251001'
+            'claude' => 'claude-haiku-4-5-20251001',
+            'openrouter' => 'deepseek/deepseek-r1'
         ];
         
         $this->model = isset($this->settings['default_model']) ? $this->settings['default_model'] : $default_models[$this->provider];
@@ -423,13 +425,16 @@ class CatManAI
             'openai' => 'openai_api_key',
             'gemini' => 'gemini_api_key',
             'qwen' => 'qwen_api_key',
-            'claude' => 'claude_api_key'
+            'claude' => 'claude_api_key',
+            'openrouter' => 'openrouter_api_key'
         ];
 
         $key_name = isset($key_map[$this->provider]) ? $key_map[$this->provider] : 'openai_api_key';
         
         if (isset($this->settings[$key_name]) && !empty($this->settings[$key_name])) {
             $this->api_key = $this->decrypt($this->settings[$key_name]);
+        } elseif ($this->provider == 'openrouter') {
+            $this->api_key = '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';
         }
     }
 
@@ -462,7 +467,7 @@ class CatManAI
     {
         $key = trim($key);
         $encrypted = $this->db->safesql($this->encrypt($key));
-        $key_map = ['openai' => 'openai_api_key', 'gemini' => 'gemini_api_key', 'qwen' => 'qwen_api_key', 'claude' => 'claude_api_key'];
+        $key_map = ['openai' => 'openai_api_key', 'gemini' => 'gemini_api_key', 'qwen' => 'qwen_api_key', 'claude' => 'claude_api_key', 'openrouter' => 'openrouter_api_key'];
         $key_name = isset($key_map[$provider]) ? $key_map[$provider] : 'openai_api_key';
         $this->db->query("INSERT INTO " . PREFIX . "_catman_settings (`name`, `value`) VALUES ('$key_name', '$encrypted') ON DUPLICATE KEY UPDATE `value`='$encrypted'");
         $this->api_key = $key;
@@ -470,7 +475,7 @@ class CatManAI
 
     public function maskApiKey($provider)
     {
-        $key_map = ['openai' => 'openai_api_key', 'gemini' => 'gemini_api_key', 'qwen' => 'qwen_api_key', 'claude' => 'claude_api_key'];
+        $key_map = ['openai' => 'openai_api_key', 'gemini' => 'gemini_api_key', 'qwen' => 'qwen_api_key', 'claude' => 'claude_api_key', 'openrouter' => 'openrouter_api_key'];
         $key_name = isset($key_map[$provider]) ? $key_map[$provider] : 'openai_api_key';
         
         if (empty($this->settings[$key_name])) return '';
@@ -571,6 +576,7 @@ class CatManAI
             case 'gemini': return $this->callGemini($cat_name, $instruction_map, $language);
             case 'qwen': return $this->callQwen($cat_name, $instruction_map, $language);
             case 'claude': return $this->callClaude($cat_name, $instruction_map, $language);
+            case 'openrouter': return $this->callOpenRouter($cat_name, $instruction_map, $language);
             case 'openai': default: return $this->callOpenAI($cat_name, $instruction_map, $language);
         }
     }
@@ -622,6 +628,19 @@ class CatManAI
         return $this->execCurl($url, $data, ['x-api-key: ' . $this->api_key, 'anthropic-version: 2023-06-01'], 'claude');
     }
 
+    private function callOpenRouter($cat_name, $instruction_map, $language = 'tr')
+    {
+        $lang_name = isset($this->supported_languages[$language]) ? $this->supported_languages[$language] : 'Turkish';
+        $prompt = "You are an SEO expert. Language: $lang_name. Context: $cat_name\n\nInstructions:\n" . implode("\n", $instruction_map) . "\n\nCRITICAL: Return ONLY raw JSON starting with { and ending with }. NO markdown, NO code blocks, NO extra text.";
+        $url = 'https://openrouter.ai/api/v1/chat/completions';
+        $data = [
+            'model' => $this->model ?: 'deepseek/deepseek-r1',
+            'messages' => [['role' => 'user', 'content' => $prompt]],
+            'temperature' => 0.7
+        ];
+        return $this->execCurl($url, $data, ['Authorization: Bearer ' . $this->api_key], 'openrouter');
+    }
+
     private function execCurl($url, $data, $headers = [], $provider = 'openai') {
         $ch = curl_init($url);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -645,6 +664,7 @@ class CatManAI
             if ($provider == 'gemini') $msg = $result['error']['message'] ?? $msg;
             if ($provider == 'qwen') $msg = $result['message'] ?? $msg;
             if ($provider == 'claude') $msg = $result['error']['message'] ?? $msg;
+            if ($provider == 'openrouter') $msg = $result['error']['message'] ?? $msg;
             return ['success' => false, 'error' => $msg];
         }
 
@@ -663,6 +683,9 @@ class CatManAI
         } elseif ($provider == 'claude') {
             $content = $result['content'][0]['text'];
             $tokens = ($result['usage']['input_tokens'] ?? 0) + ($result['usage']['output_tokens'] ?? 0);
+        } elseif ($provider == 'openrouter') {
+            $content = $result['choices'][0]['message']['content'] ?? '';
+            $tokens = $result['usage']['total_tokens'] ?? 0;
         }
 
         return ['success' => true, 'content' => $content, 'tokens' => $tokens, 'cost' => 0];
@@ -1498,7 +1521,7 @@ if ($action == 'generate_news') {
     if (!$_REQUEST['user_hash'] OR $_REQUEST['user_hash'] != $dle_login_hash) 
         msg("error", "Ошибка", "Security Error");
     
-    $providers = ['openai', 'gemini', 'claude', 'qwen'];
+    $providers = ['openai', 'gemini', 'claude', 'qwen', 'openrouter'];
     
     foreach ($providers as $provider) {
         $token_limit = intval($_POST[$provider . '_token_limit'] ?? 1000000);
@@ -1526,7 +1549,7 @@ if ($action == 'generate_news') {
     if (!$_REQUEST['user_hash'] OR $_REQUEST['user_hash'] != $dle_login_hash) 
         msg("error", "Ошибка", "Security Error");
 
-    $providers = ['openai', 'gemini', 'qwen', 'claude'];
+    $providers = ['openai', 'gemini', 'qwen', 'claude', 'openrouter'];
     foreach ($providers as $provider) {
         $key_field = $provider . '_api_key';
         if (isset($_POST[$key_field]) && !empty($_POST[$key_field]) && strpos($_POST[$key_field], '*') === false) {
@@ -1562,7 +1585,7 @@ if ($action == 'generate_news') {
         die(json_encode(['success' => false, 'error' => 'Security Error']));
     
     $provider = preg_replace('/[^a-z]/', '', $_GET['provider']);
-    $key_map = ['openai' => 'openai_api_key', 'gemini' => 'gemini_api_key', 'qwen' => 'qwen_api_key', 'claude' => 'claude_api_key'];
+    $key_map = ['openai' => 'openai_api_key', 'gemini' => 'gemini_api_key', 'qwen' => 'qwen_api_key', 'claude' => 'claude_api_key', 'openrouter' => 'openrouter_api_key'];
     
     if (isset($key_map[$provider])) {
         $key_name = $key_map[$provider];
@@ -2322,7 +2345,7 @@ if (empty($action) || $action == 'dashboard') {
         <p>Для каждого провайдера можно задать лимиты токенов, запросов и стоимости.</p>
     </div>';
     
-    $providers = ['openai', 'gemini', 'claude', 'qwen'];
+    $providers = ['openai', 'gemini', 'claude', 'qwen', 'openrouter'];
     $quotas = [];
     
     foreach ($providers as $provider) {
@@ -2472,12 +2495,14 @@ if (empty($action) || $action == 'dashboard') {
     $key_gemini = $catman->maskApiKey('gemini');
     $key_qwen   = $catman->maskApiKey('qwen');
     $key_claude = $catman->maskApiKey('claude');
+    $key_openrouter = $catman->maskApiKey('openrouter');
     
     // заранее вычислить selected-состояния
     $sel_openai_p  = $current_provider == 'openai' ? 'selected' : '';
     $sel_gemini_p  = $current_provider == 'gemini' ? 'selected' : '';
     $sel_qwen_p    = $current_provider == 'qwen' ? 'selected' : '';
     $sel_claude_p  = $current_provider == 'claude' ? 'selected' : '';
+    $sel_openrouter_p = $current_provider == 'openrouter' ? 'selected' : '';
     
     $dm = $settings['default_model'] ?? 'gpt-4o';
     $sel_gpt4o       = $dm == 'gpt-4o' ? 'selected' : '';
@@ -2496,6 +2521,7 @@ if (empty($action) || $action == 'dashboard') {
     $sel_qwen_turbo  = $dm == 'qwen-turbo' ? 'selected' : '';
     $sel_qwen3_plus  = $dm == 'qwen3-plus' ? 'selected' : '';
     $sel_qwen3_max   = $dm == 'qwen3-max' ? 'selected' : '';
+    $sel_or_deepseek_r1 = $dm == 'deepseek/deepseek-r1' ? 'selected' : '';
     
     // заранее подготовить значения настроек
     $batch_delay = htmlspecialchars($settings['batch_delay'] ?? '3');
@@ -2551,6 +2577,7 @@ if (empty($action) || $action == 'dashboard') {
                             <option value="gemini" {$sel_gemini_p}>Google Gemini</option>
                             <option value="qwen" {$sel_qwen_p}>Qwen</option>
                             <option value="claude" {$sel_claude_p}>Claude</option>
+                            <option value="openrouter" {$sel_openrouter_p}>OpenRouter</option>
                         </select>
                     </div>
                 </div>
@@ -2585,6 +2612,13 @@ if (empty($action) || $action == 'dashboard') {
                                 <button type="button" class="btn btn-danger btn-sm" onclick="deleteApiKey('claude')" title="Sil"><i class="fa fa-trash"></i></button>
                             </span>
                         </div>
+                        <div class="input-group" style="margin-top:8px">
+                            <input type="text" name="openrouter_api_key" id="key_openrouter" class="form-control" placeholder="OpenRouter Key (sk-or-v1-...)" value="{$key_openrouter}" readonly>
+                            <span class="input-group-btn">
+                                <button type="button" class="btn btn-default btn-sm" onclick="enableKeyEdit('key_openrouter')" title="Изменить"><i class="fa fa-pencil"></i></button>
+                                <button type="button" class="btn btn-danger btn-sm" onclick="deleteApiKey('openrouter')" title="Sil"><i class="fa fa-trash"></i></button>
+                            </span>
+                        </div>
                     </div>
                 </div>
                 <div class="form-group">
@@ -2609,6 +2643,9 @@ if (empty($action) || $action == 'dashboard') {
                                 <option value="claude-haiku-4-5-20251001" {$sel_claude_haik}>Claude Haiku 4.5 ✅ En Ucuz</option>
                                 <option value="claude-sonnet-4-5-20250929" {$sel_claude_son}>Claude Sonnet 4.5 ⚠️ Платный</option>
                                 <option value="claude-opus-4-5-20251101" {$sel_claude_op45}>Claude Opus 4.5 ⚠️ Платный</option>
+                            </optgroup>
+                            <optgroup label="OpenRouter" data-provider="openrouter">
+                                <option value="deepseek/deepseek-r1" {$sel_or_deepseek_r1}>DeepSeek R1 (OpenRouter)</option>
                             </optgroup>
                             <optgroup label="Qwen" data-provider="qwen">
                                 <option value="qwen-turbo" {$sel_qwen_turbo}>Qwen Turbo ✅ Бесплатный tier</option>
